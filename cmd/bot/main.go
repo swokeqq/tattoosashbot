@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/swokeqq/tatusashbot/internal/config"
 )
 
 func main() {
@@ -13,5 +15,12 @@ func main() {
 }
 
 func run() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	_ = cfg
+
 	return nil
 }
