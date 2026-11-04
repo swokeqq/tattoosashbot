@@ -1,0 +1,6 @@
+.env
+/bin/
+/scratch/
+*.test
+*.out
+PLAN.md
