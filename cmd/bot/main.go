@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/swokeqq/tatusashbot/internal/config"
+	"github.com/swokeqq/tatusashbot/internal/conversation"
 	"github.com/swokeqq/tatusashbot/internal/telegram"
 )
 
@@ -30,13 +31,15 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	tgBot, err := telegram.New(cfg.BotToken, logger)
+	tgBot, err := telegram.New(cfg.BotToken, logger, cfg.OwnerID)
 	if err != nil {
 		return err
 	}
 
+	service := conversation.NewService(conversation.NewMemoryRepo(), tgBot)
+
 	logger.Info("bot started")
-	tgBot.Run(ctx)
+	tgBot.Run(ctx, service)
 	logger.Info("bot stopped")
 
 	return nil
