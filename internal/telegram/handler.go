@@ -10,7 +10,7 @@ import (
 	"github.com/swokeqq/tatusashbot/internal/flow"
 )
 
-func (b *Bot) handleUpdate(ctx context.Context, api *bot.Bot, update *models.Update) {
+func (b *Bot) handleUpdate(ctx context.Context, _ *bot.Bot, update *models.Update) {
 	switch {
 	case update.BusinessConnection != nil:
 		b.handleConnection(update.BusinessConnection)
@@ -24,7 +24,7 @@ func (b *Bot) handleUpdate(ctx context.Context, api *bot.Bot, update *models.Upd
 func (b *Bot) handleConnection(conn *models.BusinessConnection) {
 	allowed := conn.User.ID == b.ownerID && conn.IsEnabled
 	b.connections.Store(conn.ID, allowed)
-	b.logger.Info("business connection updated", "connection id", conn.ID, "allowed", allowed)
+	b.logger.Info("business connection updated", "connection_id", conn.ID, "allowed", allowed)
 }
 
 func (b *Bot) handleBusinessMessage(ctx context.Context, msg *models.Message) {
@@ -82,7 +82,7 @@ func messageEvent(msg *models.Message, ownerID int64) (flow.Event, bool) {
 func (b *Bot) dispatch(ctx context.Context, msg *models.Message, event flow.Event) bool {
 	allowed, err := b.isAllowedConnection(ctx, msg.BusinessConnectionID)
 	if err != nil {
-		b.logger.Error("check connection", "connection id", msg.BusinessConnectionID, "err", err)
+		b.logger.Error("check connection", "connection_id", msg.BusinessConnectionID, "err", err)
 		return false
 	}
 	if !allowed {
@@ -91,7 +91,7 @@ func (b *Bot) dispatch(ctx context.Context, msg *models.Message, event flow.Even
 
 	key := conversation.ChatKey{ConnectionID: msg.BusinessConnectionID, ChatID: msg.Chat.ID}
 	if err := b.events.Handle(ctx, key, event); err != nil {
-		b.logger.Error("handle event", "chat id", msg.BusinessConnectionID, "err", err)
+		b.logger.Error("handle event", "chat_id", msg.Chat.ID, "err", err)
 		return false
 	}
 

@@ -21,7 +21,7 @@ func (b *Bot) Send(ctx context.Context, key conversation.ChatKey, action flow.Ac
 	}
 
 	if _, err := b.api.SendMessage(ctx, params); err != nil {
-		return fmt.Errorf("send mesage: %w", err)
+		return fmt.Errorf("send message: %w", err)
 	}
 
 	return nil
