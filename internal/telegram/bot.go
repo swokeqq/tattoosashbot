@@ -39,6 +39,9 @@ func New(token string, logger *slog.Logger, ownerID int64) (*Bot, error) {
 			models.AllowedUpdateBusinessConnection,
 			models.AllowedUpdateBusinessMessage,
 		}),
+		bot.WithNotAsyncHandlers(),
+		bot.WithWorkers(5),
+		bot.WithMiddlewares(b.recoverPanic, b.withTimeout, b.logUpdate),
 	)
 
 	if err != nil {
