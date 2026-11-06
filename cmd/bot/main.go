@@ -36,7 +36,7 @@ func run() error {
 		return err
 	}
 
-	service := conversation.NewService(conversation.NewMemoryRepo(), tgBot)
+	service := conversation.NewService(conversation.NewMemoryRepo(), tgBot, cfg.HandoffTTL)
 
 	logger.Info("bot started")
 	tgBot.Run(ctx, service)

@@ -5,11 +5,13 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/swokeqq/tatusashbot/internal/flow"
 )
 
 var testKey = ChatKey{ConnectionID: "connection", ChatID: 1}
+var testTTL = 14 * 24 * time.Hour
 
 type fakeSender struct {
 	mu   sync.Mutex
@@ -29,25 +31,10 @@ func (f *fakeSender) Send(_ context.Context, _ ChatKey, action flow.Action) erro
 	return nil
 }
 
-func currentState(t *testing.T, repo StateRepo) flow.State {
-	t.Helper()
-
-	var state flow.State
-	err := repo.WithState(context.Background(), testKey, func(current flow.State) (flow.State, error) {
-		state = current
-		return current, nil
-	})
-	if err != nil {
-		t.Fatalf("read state: %v", err)
-	}
-
-	return state
-}
-
 func TestHandleFullDialog(t *testing.T) {
 	repo := NewMemoryRepo()
 	sender := &fakeSender{}
-	service := NewService(repo, sender)
+	service := NewService(repo, sender, testTTL)
 
 	message := flow.Event{Type: flow.EventClientMessage}
 	press := func(button string) flow.Event {
@@ -81,7 +68,7 @@ func TestHandleFullDialog(t *testing.T) {
 func TestHandleSendErrorKeepsState(t *testing.T) {
 	repo := NewMemoryRepo()
 	sender := &fakeSender{}
-	service := NewService(repo, sender)
+	service := NewService(repo, sender, testTTL)
 
 	boom := errors.New("boom")
 	sender.err = boom
@@ -100,14 +87,9 @@ func TestHandleSendErrorKeepsState(t *testing.T) {
 func TestHandleConcurrentMessages(t *testing.T) {
 	repo := NewMemoryRepo()
 	sender := &fakeSender{}
-	service := NewService(repo, sender)
+	service := NewService(repo, sender, testTTL)
 
-	err := repo.WithState(context.Background(), testKey, func(flow.State) (flow.State, error) {
-		return flow.StateAwaitCustomBrief, nil
-	})
-	if err != nil {
-		t.Fatalf("set state: %v", err)
-	}
+	setConversation(t, repo, Conversation{State: flow.StateAwaitCustomBrief})
 
 	message := flow.Event{Type: flow.EventClientMessage}
 
@@ -126,5 +108,103 @@ func TestHandleConcurrentMessages(t *testing.T) {
 	}
 	if got := currentState(t, repo); got != flow.StateCollectingCustomBrief {
 		t.Errorf("state = %q, want %q", got, flow.StateCollectingCustomBrief)
+	}
+}
+
+func TestHandleReturningClient(t *testing.T) {
+	start := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	message := flow.Event{Type: flow.EventClientMessage}
+	owner := flow.Event{Type: flow.EventOwnerMessage}
+	button := flow.Event{Type: flow.EventButton, Button: flow.ButtonBook}
+
+	tests := []struct {
+		name      string
+		silence   time.Duration
+		event     flow.Event
+		wantState flow.State
+		wantSent  int
+	}{
+		{"пауза меньше срока", testTTL - time.Second, message, flow.StateHandedOff, 0},
+		{"пауза равна сроку", testTTL, message, flow.StateGreeted, 1},
+		{"пауза больше срока", testTTL + time.Hour, message, flow.StateGreeted, 1},
+		{"владелец пишет после паузы", testTTL + time.Hour, owner, flow.StateHandedOff, 0},
+		{"старая кнопка после паузы", testTTL + time.Hour, button, flow.StateHandedOff, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := NewMemoryRepo()
+			sender := &fakeSender{}
+			service := NewService(repo, sender, testTTL)
+			service.now = func() time.Time { return start.Add(tt.silence) }
+
+			setConversation(t, repo, Conversation{State: flow.StateHandedOff, LastActivity: start})
+
+			if err := service.Handle(context.Background(), testKey, tt.event); err != nil {
+				t.Fatalf("handle event: %v", err)
+			}
+
+			if got := currentState(t, repo); got != tt.wantState {
+				t.Errorf("state = %q, want %q", got, tt.wantState)
+			}
+			if got := len(sender.sent); got != tt.wantSent {
+				t.Errorf("sent = %d, want %d", got, tt.wantSent)
+			}
+		})
+	}
+}
+
+func TestHandleActivityExtendsHandoff(t *testing.T) {
+	start := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	repo := NewMemoryRepo()
+	sender := &fakeSender{}
+	service := NewService(repo, sender, testTTL)
+
+	setConversation(t, repo, Conversation{State: flow.StateHandedOff, LastActivity: start})
+
+	service.now = func() time.Time { return start.Add(10 * 24 * time.Hour) }
+	if err := service.Handle(context.Background(), testKey, flow.Event{Type: flow.EventOwnerMessage}); err != nil {
+		t.Fatalf("handle owner message: %v", err)
+	}
+
+	service.now = func() time.Time { return start.Add(20 * 24 * time.Hour) }
+	if err := service.Handle(context.Background(), testKey, flow.Event{Type: flow.EventClientMessage}); err != nil {
+		t.Fatalf("handle client message: %v", err)
+	}
+
+	if got := currentState(t, repo); got != flow.StateHandedOff {
+		t.Errorf("state = %q, want %q", got, flow.StateHandedOff)
+	}
+	if got := len(sender.sent); got != 0 {
+		t.Errorf("sent = %d, want 0", got)
+	}
+}
+
+func currentState(t *testing.T, repo StateRepo) flow.State {
+	t.Helper()
+
+	var state flow.State
+	err := repo.WithState(context.Background(), testKey, func(current Conversation) (Conversation, error) {
+		state = current.State
+		return current, nil
+	})
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+
+	return state
+}
+
+func setConversation(t *testing.T, repo StateRepo, conversation Conversation) {
+	t.Helper()
+
+	err := repo.WithState(context.Background(), testKey, func(Conversation) (Conversation, error) {
+		return conversation, nil
+	})
+
+	if err != nil {
+		t.Fatalf("set conversation: %v", err)
 	}
 }

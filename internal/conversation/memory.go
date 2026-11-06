@@ -10,20 +10,20 @@ import (
 
 type MemoryRepo struct {
 	mu     sync.Mutex
-	states map[ChatKey]flow.State
+	states map[ChatKey]Conversation
 }
 
 func NewMemoryRepo() *MemoryRepo {
-	return &MemoryRepo{states: make(map[ChatKey]flow.State)}
+	return &MemoryRepo{states: make(map[ChatKey]Conversation)}
 }
 
-func (r *MemoryRepo) WithState(_ context.Context, key ChatKey, fn func(flow.State) (flow.State, error)) error {
+func (r *MemoryRepo) WithState(_ context.Context, key ChatKey, fn func(Conversation) (Conversation, error)) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	current, ok := r.states[key]
 	if !ok {
-		current = flow.StateNew
+		current = Conversation{State: flow.StateNew}
 	}
 
 	state, err := fn(current)
