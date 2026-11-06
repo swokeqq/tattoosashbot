@@ -54,6 +54,7 @@ func TestTransition(t *testing.T) {
 		{"кнопка без начатого диалога игнорируется", StateNew, press(ButtonBook), StateNew, "", nil},
 		{"кнопка после передачи игнорируется", StateHandedOff, press(ButtonReady), StateHandedOff, "", nil},
 		{"после передачи диалога владельцу бот молчит", StateHandedOff, message, StateHandedOff, "", nil},
+		{"клиент вернулся после паузы", StateHandedOff, Event{Type: EventClientReturned}, StateGreeted, textGreeting, []string{ButtonPersonal, ButtonBook}},
 
 		{"владелец написал первым", StateNew, owner, StateHandedOff, "", nil},
 		{"сообщение владельца останавливает бота", StateChoosingBranch, owner, StateHandedOff, "", nil},

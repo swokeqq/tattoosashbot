@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	BotToken   string        `env:"BOT_TOKEN,required,notEmpty"`
-	OwnerID    int64         `env:"OWNER_USER_ID,required,notEmpty"`
-	LogLevel   slog.Level    `env:"LOG_LEVEL" envDefault:"info"`
-	HandoffTTL time.Duration `env:"HANDOFF_TTL" envDefault:"336h"`
+	BotToken    string        `env:"BOT_TOKEN,required,notEmpty"`
+	OwnerID     int64         `env:"OWNER_USER_ID,required,notEmpty"`
+	LogLevel    slog.Level    `env:"LOG_LEVEL" envDefault:"info"`
+	HandoffTTL  time.Duration `env:"HANDOFF_TTL" envDefault:"336h"`
+	DatabaseURL string        `env:"DATABASE_URL,required,notEmpty"`
 }
 
 func Load() (*Config, error) {

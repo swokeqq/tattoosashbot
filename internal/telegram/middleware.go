@@ -2,10 +2,22 @@ package telegram
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 )
+
+const handlerTimeout = 10 * time.Second
+
+func (b *Bot) withTimeout(next bot.HandlerFunc) bot.HandlerFunc {
+	return func(ctx context.Context, api *bot.Bot, update *models.Update) {
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), handlerTimeout)
+		defer cancel()
+
+		next(ctx, api, update)
+	}
+}
 
 func (b *Bot) recoverPanic(next bot.HandlerFunc) bot.HandlerFunc {
 	return func(ctx context.Context, api *bot.Bot, update *models.Update) {
