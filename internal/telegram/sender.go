@@ -15,6 +15,8 @@ func (b *Bot) Send(ctx context.Context, key conversation.ChatKey, action flow.Ac
 		BusinessConnectionID: key.ConnectionID,
 		ChatID:               key.ChatID,
 		Text:                 action.Text,
+		ParseMode:            models.ParseModeHTML,
+		LinkPreviewOptions:   &models.LinkPreviewOptions{IsDisabled: bot.True()},
 	}
 	if len(action.Buttons) > 0 {
 		params.ReplyMarkup = keyboard(action.Buttons)
