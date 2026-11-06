@@ -30,7 +30,6 @@ func New(token string, logger *slog.Logger, ownerID int64) (*Bot, error) {
 	api, err := bot.New(
 		token,
 		bot.WithDefaultHandler(b.handleUpdate),
-		bot.WithMiddlewares(b.recoverPanic, b.logUpdate),
 		bot.WithErrorsHandler(func(err error) {
 			logger.Error("telegram api", "err", err)
 		}),
