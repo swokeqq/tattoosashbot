@@ -24,6 +24,7 @@ const (
 	EventClientMessage EventType = iota
 	EventButton
 	EventOwnerMessage
+	EventClientReturned
 )
 
 type Event struct {
@@ -60,6 +61,8 @@ func Transition(s State, e Event) (State, []Action) {
 		return onButton(s, e.Button)
 	case EventClientMessage:
 		return onClientMessage(s)
+	case EventClientReturned:
+		return StateGreeted, reply(textGreeting, greetingButtons...)
 	default:
 		return s, nil
 	}

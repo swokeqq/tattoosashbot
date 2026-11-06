@@ -4,18 +4,28 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/swokeqq/tatusashbot/internal/conversation"
+	"github.com/swokeqq/tatusashbot/internal/flow"
 )
 
-type Bot struct {
-	api    *bot.Bot
-	logger *slog.Logger
+type EventHandler interface {
+	Handle(ctx context.Context, key conversation.ChatKey, event flow.Event) error
 }
 
-func New(token string, logger *slog.Logger) (*Bot, error) {
-	b := &Bot{logger: logger}
+type Bot struct {
+	api         *bot.Bot
+	logger      *slog.Logger
+	ownerID     int64
+	events      EventHandler
+	connections sync.Map
+}
+
+func New(token string, logger *slog.Logger, ownerID int64) (*Bot, error) {
+	b := &Bot{logger: logger, ownerID: ownerID}
 
 	api, err := bot.New(
 		token,
@@ -25,7 +35,6 @@ func New(token string, logger *slog.Logger) (*Bot, error) {
 			logger.Error("telegram api", "err", err)
 		}),
 		bot.WithAllowedUpdates(bot.AllowedUpdates{
-			models.AllowedUpdateMessage,
 			models.AllowedUpdateCallbackQuery,
 			models.AllowedUpdateBusinessConnection,
 			models.AllowedUpdateBusinessMessage,
@@ -40,6 +49,7 @@ func New(token string, logger *slog.Logger) (*Bot, error) {
 	return b, nil
 }
 
-func (b *Bot) Run(ctx context.Context) {
+func (b *Bot) Run(ctx context.Context, events EventHandler) {
+	b.events = events
 	b.api.Start(ctx)
 }
