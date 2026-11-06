@@ -10,6 +10,7 @@ import (
 
 	"github.com/swokeqq/tatusashbot/internal/config"
 	"github.com/swokeqq/tatusashbot/internal/conversation"
+	"github.com/swokeqq/tatusashbot/internal/storage/postgres"
 	"github.com/swokeqq/tatusashbot/internal/telegram"
 )
 
@@ -31,13 +32,22 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	pool, err := postgres.Connect(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+
+	if err := postgres.Migrate(ctx, pool); err != nil {
+		return err
+	}
+
 	tgBot, err := telegram.New(cfg.BotToken, logger, cfg.OwnerID)
 	if err != nil {
 		return err
 	}
 
-	service := conversation.NewService(conversation.NewMemoryRepo(), tgBot, cfg.HandoffTTL)
-
+	service := conversation.NewService(postgres.NewConversationRepo(pool), tgBot, cfg.HandoffTTL)
 	logger.Info("bot started")
 	tgBot.Run(ctx, service)
 	logger.Info("bot stopped")
