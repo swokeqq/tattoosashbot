@@ -1,6 +1,6 @@
 <div align="center">
 
-# tatusashbot
+# tattoosashbot
 
 **Telegram-бот-консультант для тату-мастера, который отвечает клиентам из личного аккаунта**
 
@@ -117,8 +117,8 @@ Go 1.27 · [go-telegram/bot](https://github.com/go-telegram/bot) · `log/slog` �
 Нужны Go 1.27+, Docker и бот от [@BotFather](https://t.me/BotFather) с включённым Business Mode, подключённый к аккаунту в «Настройки → Telegram для бизнеса → Чат-боты».
 
 ```bash
-git clone https://github.com/swokeqq/tatusashbot.git
-cd tatusashbot
+git clone https://github.com/swokeqq/tattoosashbot.git
+cd tattoosashbot
 cp .env.example .env   # заполнить BOT_TOKEN, OWNER_USER_ID и пароль базы
 docker compose up -d postgres
 make run
@@ -146,10 +146,10 @@ make lint
 Образ собирается в два этапа и весит около 24 МБ: статический бинарник в `distroless/static:nonroot` без shell и root-пользователя. Миграции вшиты в бинарник через `embed` и применяются при старте.
 
 ```bash
-docker build -f deploy/Dockerfile -t tatusashbot:v0.1.0 .
-docker save tatusashbot:v0.1.0 | gzip | ssh server 'gunzip | docker load'
-scp docker-compose.yml deploy/backup.sh server:/opt/tatusash/
-ssh server 'cd /opt/tatusash && docker compose up -d'
+docker build -f deploy/Dockerfile -t tattoosashbot:v0.1.0 .
+docker save tattoosashbot:v0.1.0 | gzip | ssh server 'gunzip | docker load'
+scp docker-compose.yml deploy/backup.sh server:/opt/tattoosash/
+ssh server 'cd /opt/tattoosash && docker compose up -d'
 ```
 
 Бот работает на VPS с 1 ГБ ОЗУ:
@@ -157,11 +157,6 @@ ssh server 'cd /opt/tatusash && docker compose up -d'
 - **Порты:** наружу не открыт ни один. Бот сам опрашивает Telegram, база доступна только в сети compose.
 - **Контейнеры:** `read_only`, `cap_drop: ALL`, `no-new-privileges`, ротация логов, `stop_grace_period` для корректной остановки.
 - **Бэкапы:** `deploy/backup.sh` делает ежедневный `pg_dump` и хранит копии 14 дней.
-
-## Планы
-
-- [ ] CI в GitHub Actions: тесты, линтер, сборка образа в GHCR
-- [ ] Метрики Prometheus и дашборд Grafana
 
 ## Структура
 
