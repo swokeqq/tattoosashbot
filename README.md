@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src=".github/assets/avatar.jpg" alt="tattoosashbot" width="160">
+
 # tattoosashbot
 
 **Telegram-бот-консультант для тату-мастера, который отвечает клиентам из личного аккаунта**
