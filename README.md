@@ -170,3 +170,7 @@ internal/storage/postgres/  репозиторий и миграции
 migrations/              SQL-миграции (embed)
 deploy/                  Dockerfile, скрипт бэкапа
 ```
+
+## Лицензия
+
+[MIT](LICENSE)
