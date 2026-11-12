@@ -1,6 +1,6 @@
 services:
   bot:
-    image: tatusashbot:${IMAGE_TAG:-dev}
+    image: ${IMAGE_NAME:-tattoosash}:${IMAGE_TAG:-dev}
     restart: unless-stopped
     env_file: .env
     depends_on:

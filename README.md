@@ -141,15 +141,16 @@ make lint
 | `HANDOFF_TTL` | | `336h` | Сколько тишины нужно, чтобы клиент снова получил меню |
 | `LOG_LEVEL` | | `info` | `debug`, `info`, `warn`, `error` |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | для compose | | Учётные данные контейнера PostgreSQL |
-| `IMAGE_TAG` | для compose | | Версия образа бота |
+| `IMAGE_NAME` | | `tattoosash` | Имя образа бота |
+| `IMAGE_TAG` | | `dev` | Версия образа бота |
 
 ## Деплой
 
 Образ собирается в два этапа и весит около 24 МБ: статический бинарник в `distroless/static:nonroot` без shell и root-пользователя. Миграции вшиты в бинарник через `embed` и применяются при старте.
 
 ```bash
-docker build -f deploy/Dockerfile -t tattoosashbot:v0.1.0 .
-docker save tattoosashbot:v0.1.0 | gzip | ssh server 'gunzip | docker load'
+docker build -f deploy/Dockerfile -t tattoosash:v0.1.1 .
+docker save tattoosash:v0.1.1 | gzip | ssh server 'gunzip | docker load'
 scp docker-compose.yml deploy/backup.sh server:/opt/tattoosash/
 ssh server 'cd /opt/tattoosash && docker compose up -d'
 ```
